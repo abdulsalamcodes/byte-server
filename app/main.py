@@ -23,13 +23,18 @@ app.add_middleware(
 
 
 @app.get("/")
-def welcome():
-    return {"data": "Hello World"}
+def read_root():
+    return {"message": "Hello World from FastAPI on Vercel!"}
 
 
-@app.get("/health")
+@app.get("/api/health")
 def health_check():
-    return {"status": "ok"}
+    return {"status": "healthy"}
 
 
 app.include_router(quiz.router)
+
+# This is important for Vercel
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000)
