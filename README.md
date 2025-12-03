@@ -2,15 +2,75 @@
 
 FastAPI service that generates programming quiz questions using an Ollama-compatible model.
 
-## Endpoint
+**Live Frontend:** [https://byte-q.vercel.app/](https://byte-q.vercel.app/)
 
-POST `/quiz/generate`
+## Features
 
-- Description: Generate programming quiz questions. Supports streaming text output or structured JSON.
-- Consumes: `application/json`
-- Produces: `application/json` (non-stream) or `text/plain` (stream/raw fallback)
+- **Quiz Generation**: Generate programming questions for various languages and difficulty levels.
+- **Streaming Support**: Stream responses in real-time or get structured JSON.
+- **Model Agnostic**: Compatible with any Ollama model (default: `gpt-oss:20b`).
+- **Robust Error Handling**: Validates inputs and handles model failures gracefully.
 
-### Request body
+## Tech Stack
+
+- **Framework**: FastAPI
+- **Language**: Python 3.10+
+- **AI Integration**: Ollama
+- **Validation**: Pydantic
+
+## Getting Started
+
+### Prerequisites
+
+- Python 3.10 or higher
+- [Ollama](https://ollama.com/) running locally or accessible via URL
+
+### Installation
+
+1.  Clone the repository:
+
+    ```bash
+    git clone https://github.com/abdulsalamcodes/byte-server.git
+    cd byte-server
+    ```
+
+2.  Create and activate a virtual environment:
+
+    ```bash
+    python -m venv .venv
+    source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+    ```
+
+3.  Install dependencies:
+    ```bash
+    pip install -r requirements.txt
+    ```
+
+### Configuration
+
+Set the following environment variable:
+
+- `OLLAMA_API_KEY`: Your Ollama API key (if required by your provider).
+
+You can set this in a `.env` file or export it in your shell.
+
+### Running the Server
+
+Start the development server:
+
+```bash
+uvicorn app.main:app --reload
+```
+
+The API will be available at `http://localhost:8000`.
+
+## API Documentation
+
+### POST `/quiz/generate`
+
+Generate programming quiz questions.
+
+**Request Body:**
 
 ```json
 {
@@ -22,78 +82,41 @@ POST `/quiz/generate`
 }
 ```
 
-Fields:
+| Field           | Type    | Description                           | Default       |
+| :-------------- | :------ | :------------------------------------ | :------------ |
+| `lang`          | string  | Programming language (e.g., "Python") | Required      |
+| `num_questions` | integer | Number of questions (1–50)            | 5             |
+| `difficulty`    | string  | `easy`, `medium`, or `hard`           | Required      |
+| `model`         | string  | Ollama model identifier               | `gpt-oss:20b` |
+| `stream`        | boolean | Stream response text                  | `false`       |
 
-- `lang` (string, required): Programming language (e.g., "Python", "JavaScript"). Must be non-empty.
-- `num_questions` (integer, default: 5): Range 1–50.
-- `difficulty` (string, required): One of `easy | medium | hard`.
-- `model` (string, default: `gpt-oss:20b`): Ollama model identifier.
-- `stream` (boolean, default: false): If true, returns a streamed plain-text response.
+**Responses:**
 
-### Successful responses
+- **200 OK (JSON)**: Array of question objects.
+- **200 OK (Stream)**: Text stream.
+- **422 Unprocessable Entity**: Invalid input.
+- **502 Bad Gateway**: Model failure.
 
-- 200 OK (non-stream): JSON array of question objects
-
-  ```json
-  [
-    {
-      "question": "Which of the following ...?",
-      "options": ["A", "B", "C", "D"],
-      "answer": "B"
-    }
-  ]
-  ```
-
-- 200 OK (stream): `text/plain` where content arrives incrementally as the model generates.
-
-- 200 OK (raw fallback): If the model returns non-JSON and parsing fails, the endpoint returns the raw content as `text/plain`.
-
-### Error responses
-
-- 422 Unprocessable Entity: Invalid inputs (e.g., empty `lang`, invalid `difficulty`).
-- 502 Bad Gateway: Model call failed.
-- 500 Internal Server Error: Empty response or malformed data that cannot be salvaged to JSON.
-
-## Authentication
-
-The server uses an API key for Ollama requests, set via `app.settings.settings.OLLAMA_API_KEY`. Ensure your environment provides this value.
-
-## Quick start
-
-1. Install dependencies and run the server (example):
-
-   - Ensure FastAPI and `ollama` Python client are installed.
-   - Export `OLLAMA_API_KEY` environment variable.
-   - Run your app (e.g., via `uvicorn app.main:app --reload`).
-
-2. Test non-stream mode (returns JSON):
+**Example (cURL):**
 
 ```bash
-curl -s -X POST \
+curl -s -X POST http://localhost:8000/quiz/generate \
   -H "Content-Type: application/json" \
-  http://localhost:8000/quiz/generate \
-  -d '{
-    "lang": "Python",
-    "num_questions": 5,
-    "difficulty": "hard",
-    "model": "gpt-oss:20b",
-    "stream": false
-  }' | jq '.'
+  -d '{"lang": "Python", "difficulty": "medium"}'
 ```
 
-3. Test stream mode (returns text/plain stream):
+## Contributing
 
-```bash
-curl -N -X POST \
-  -H "Content-Type: application/json" \
-  http://localhost:8000/quiz/generate \
-  -d '{
-    "lang": "Python",
-    "num_questions": 5,
-    "difficulty": "hard",
-    "model": "gpt-oss:20b",
-    "stream": true
-  }'
-```
+We welcome contributions! Please follow these steps:
 
-Note: With `stream=true`, the response may contain JSON fragments or prose depending on the model. If you need structured data, set `stream=false`.
+1.  **Fork the repository**.
+2.  **Create a new branch**: `git checkout -b feature/your-feature-name`.
+3.  **Make your changes** and commit them: `git commit -m 'Add some feature'`.
+4.  **Push to the branch**: `git push origin feature/your-feature-name`.
+5.  **Submit a pull request**.
+
+Please ensure your code follows the existing style and includes tests where appropriate.
+
+## License
+
+This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
