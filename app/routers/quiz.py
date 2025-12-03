@@ -5,6 +5,9 @@ from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 from ollama import Client
 from app.settings import settings
+import json
+import re
+from fastapi import Response
 
 client = Client(
     host="https://ollama.com",
@@ -37,6 +40,7 @@ class QuizRequest(BaseModel):
 
 @router.post("/generate", response_model=List[Question])
 def generate_quiz(req: QuizRequest):
+    print("Starting....")
     """Generate a programming quiz. Supports streaming and non-stream responses.
 
     When stream=true, returns a text stream of the model output. Otherwise, returns
@@ -68,13 +72,10 @@ def generate_quiz(req: QuizRequest):
     if req.stream:
         def _stream() -> Generator[str, None, None]:
             try:
-                for part in client.chat(req.model or "gemma3", messages=messages, stream=True):
-                    # Some SDKs return different shapes; guard keys defensively
-                    content = (
-                        part.get("message", {}).get("content")
-                        if isinstance(part, dict)
-                        else None
-                    )
+                stream = client.chat(req.model,
+                                     messages=messages, stream=True)
+                for chunk in stream:
+                    content = chunk.message.content
                     if content:
                         yield content
             except Exception as e:
@@ -85,9 +86,8 @@ def generate_quiz(req: QuizRequest):
 
     # Non-stream mode: aggregate full response and parse JSON
     try:
-        resp = client.chat(req.model or "gemma3",
+        resp = client.chat(req.model,
                            messages=messages, stream=False)
-        print("model response:", resp)
     except Exception as e:
         raise HTTPException(
             status_code=502, detail=f"Model call failed: {str(e)}")
@@ -109,14 +109,10 @@ def generate_quiz(req: QuizRequest):
             status_code=500, detail="Empty response from model")
 
     # Attempt to parse JSON content
-    import json
-
     try:
         parsed = json.loads(content)
     except json.JSONDecodeError:
         # Try to salvage by extracting the first JSON-like block
-        import re
-
         match = re.search(r"\[.*\]", content, flags=re.DOTALL)
         if match:
             try:
@@ -128,7 +124,6 @@ def generate_quiz(req: QuizRequest):
 
     # If parsing failed, return raw content to the user as plain text per requirement
     if parsed is None:
-        from fastapi import Response
         return Response(content=content, media_type="text/plain")
 
     # Validate shape into Question models
