@@ -1,8 +1,0 @@
-[tool.poetry]
-name = "byte-server"
-version = "0.1.0"
-description = "FastAPI backend for Byte app (Ollama-powered quiz generator)"
-authors = ["Abodunrin Abdulsalam <abdulsalamabodunrin369@gmail.com>"]
-readme = "README.md"
-packages = [{ include = "app" }]
-
