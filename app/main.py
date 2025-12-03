@@ -9,17 +9,14 @@ app = FastAPI(
     version="0.1.0",
 )
 
-# CORS configuration: allow all origins and explicitly allow localhost:3000
+# CORS configuration: allow all origins.
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*", "http://localhost:3000", "https://localhost:3000"],
+    allow_origins=["*"],
     allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-# add a health check endpoint
-# welcome - hello world
 
 
 @app.get("/")
@@ -33,8 +30,3 @@ def health_check():
 
 
 app.include_router(quiz.router)
-
-# This is important for Vercel
-if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
